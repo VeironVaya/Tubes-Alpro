@@ -1,0 +1,406 @@
+package main
+
+import "fmt"
+
+const NMAX int = 1024
+
+type barber struct {
+	nama            string
+	tanggalTersedia [NMAX]int
+	rating          int
+	harga           int
+}
+
+type ArrBarber [NMAX]barber
+type ArrRange [NMAX]barber
+type ArrHarga [NMAX]int
+
+var x, nData, dataSaatIni int
+var data ArrBarber
+var dataHarga ArrHarga
+
+func main() {
+	mulai()
+}
+
+func mulai() {
+	fmt.Println("  __        _______ _     ____ ___  __  __ _____   _____ ___")
+	fmt.Println("  \\ \\      / / ____| |   / ___/ _ \\|  \\/  | ____| |_   _/ _ \\ ")
+	fmt.Println("   \\ \\ /\\ / /|  _| | |  | |  | | | | |\\/| |  _|     | || | | |  ")
+	fmt.Println("    \\ V  V / | |___| |__| |__| |_| | |  | | |___    | || |_| |    ")
+	fmt.Println("     \\_/\\_/  |_____|_____\\____\\___/|_|  |_|_____|   |_| \\___/       ")
+	fmt.Println("                    \\ \\   / /  ( _ )   \\ \\      / /                     ")
+	fmt.Println("                     \\ \\ / /   / _ \\/\\  \\ \\ /\\ / /                      ")
+	fmt.Println("                      \\ V /   | (_>  <   \\ V  V /                       ")
+	fmt.Println("     ____    _    ____ \\_/__  _\\___/\\/__  \\_/\\_/_   _  ___  ____        ")
+	fmt.Println("    | __ )  / \\  |  _ \\| __ )| ____|  _ \\/ ___|| | | |/ _ \\|  _ \\       ")
+	fmt.Println("    |  _ \\ / _ \\ | |_) |  _ \\|  _| | |_) \\___ \\| |_| | | | | |_) |      ")
+	fmt.Println("    | |_) / ___ \\|  _ <| |_) | |___|  _ < ___) |  _  | |_| |  __/       ")
+	fmt.Println("    |____/_/   \\_\\_| \\_\\____/|_____|_| \\_\\____/|_| |_|\\___/|_|          ")
+
+	fmt.Println("Siapa anda?", "\n1. Admin", "\n2. Pelanggan", "\n0. Keluar")
+	fmt.Scan(&x)
+	if x == 1 {
+		menuAdmin()
+	} else if x == 2 {
+		menuPelanggan()
+	} else if x == 0 {
+		fmt.Println("")
+	} else {
+		fmt.Println("\nMasukan tidak valid, silahkan pilih kembali")
+		mulai()
+	}
+}
+
+func menuAdmin() {
+	fmt.Println("1. Masukkan data barber", "\n0. Kembali ke menu")
+	fmt.Print("Pilihan anda: ")
+	fmt.Scan(&x)
+	if x == 0 {
+		mulai()
+	} else if x == 1 {
+		fmt.Print("Berapa banyak barber yang akan diinput? : ")
+		fmt.Scan(&nData)
+		inputBarber(&data, &dataHarga, &nData)
+		menuAdmin()
+	} else {
+		fmt.Println("\nMasukan tidak valid, silahkan pilih kembali")
+		menuAdmin()
+	}
+}
+
+func menuPelanggan() {
+	var namaDicari string
+	fmt.Println("1. Lihat list barber", "\n2. Cari nama barber", "\n3. Cari berdasarkan range harga", "\n0. Kembali")
+	fmt.Print("Pilihan anda: ")
+	fmt.Scan(&x)
+	if x == 1 {
+		cetakListBarber(data, dataHarga, dataSaatIni)
+	} else if x == 2 {
+		cariNamaBarber(data, dataSaatIni, namaDicari)
+	} else if x == 3 {
+		cariRange(&data, &dataHarga, dataSaatIni)
+	} else if x == 0 {
+		mulai()
+	} else {
+		fmt.Println("\nMasukan tidak valid, silahkan pilih kembali")
+		menuPelanggan()
+	}
+}
+
+func cariRange(A *ArrBarber, Ah *ArrHarga, nData int) {
+	var batasAwal, batasAtas, count, i, idx, j int
+	var index ArrHarga
+	var ARange ArrRange
+
+	sortingHarga(&data, &dataHarga, nData)
+	fmt.Print("Masukkan harga minimum: ")
+	fmt.Scan(&batasAwal)
+	fmt.Print("Masukkan harga maksimum: ")
+	fmt.Scan(&batasAtas)
+	count = jumArrayRange(dataHarga, batasAwal, batasAtas, nData, &index)
+	if count != 0 {
+		fmt.Println("Data dalam rentang harga:")
+		for i = 0; i < count; i++ {
+			idx = index[i]
+			ARange[i].nama = data[idx].nama
+			ARange[i].harga = data[idx].harga
+			ARange[i].rating = data[idx].rating
+			for j = 0; j < NMAX; j++ {
+				ARange[i].tanggalTersedia[j] = data[idx].tanggalTersedia[j]
+			}
+			fmt.Printf("%d. Nama: %s, Harga: %d, Rating: %d, Tanggal: ", i+1, ARange[i].nama, ARange[i].harga, ARange[i].rating)
+			for j = 0; j < NMAX && ARange[i].tanggalTersedia[j] != 0; j++ {
+				fmt.Printf("%d ", ARange[i].tanggalTersedia[j])
+			}
+			fmt.Println()
+		}
+		bookingRange(ARange, count)
+	} else {
+		fmt.Println("Tidak ada barber dalam range tersebut")
+		fmt.Println("Silahkan ulangi pencarian")
+		cariRange(A, Ah, nData)
+	}
+}
+
+func inputBarber(A *ArrBarber, Ah *ArrHarga, n *int) {
+	if *n > NMAX-dataSaatIni {
+		*n = NMAX - dataSaatIni
+	}
+	var i, j, tanggal int
+
+	for i = dataSaatIni; i < dataSaatIni+*n; i++ {
+		fmt.Print("Masukkan nama barber : ")
+		fmt.Scan(&A[i].nama)
+		fmt.Print("Harga barber         : ")
+		fmt.Scan(&A[i].harga)
+		fmt.Print("Rating barber        : ")
+		fmt.Scan(&A[i].rating)
+		Ah[i] = A[i].harga
+		fmt.Println("Masukkan tanggal barber available (masukkan 0 untuk berhenti):")
+		j = 0
+		tanggal = 1
+		for tanggal > 0 {
+			fmt.Scan(&tanggal)
+
+			if j < NMAX {
+				if !tanggalSudahAda(A[i].tanggalTersedia, j, tanggal) {
+					A[i].tanggalTersedia[j] = tanggal
+					j++
+				} else {
+					fmt.Println("Tanggal sudah ada, masukkan tanggal lain:")
+				}
+			} else {
+				fmt.Println("Jumlah tanggal yang dimasukkan telah mencapai batas maksimal.")
+			}
+		}
+		if i < dataSaatIni+*n-1 {
+			fmt.Println("Barber berikutnya")
+		}
+	}
+	dataSaatIni += *n
+}
+
+func tanggalSudahAda(tanggalArr [NMAX]int, n int, tanggal int) bool {
+	var i int
+	for i = 0; i < n; i++ {
+		if tanggalArr[i] == tanggal {
+			return true
+		}
+	}
+	return false
+}
+
+func cetakListBarber(A ArrBarber, Ah ArrHarga, n int) {
+	var j, i, x int
+	fmt.Println("1. Urutkan berdasarkan harga (mulai dari termurah)", "\n2. Urutkan berdasarkan rating (mulai dari rating tertinggi)", "\n0. Kembali")
+	fmt.Print("Pilihan anda: ")
+	fmt.Scan(&x)
+	if x == 1 {
+		sortingHarga(&A, &Ah, n)
+		fmt.Println("----------LIST BARBER----------")
+		for i = 0; i < n; i++ {
+			fmt.Printf("%d. Nama: %s, Harga: %d, Rating: %d, Tanggal: ", i+1, A[i].nama, A[i].harga, A[i].rating)
+			j = 0
+			for A[i].tanggalTersedia[j] != 0 && j < NMAX {
+				fmt.Printf("%d ", A[i].tanggalTersedia[j])
+				j++
+			}
+			fmt.Println()
+		}
+		bookingBarberSort(A, n)
+	} else if x == 2 {
+		sortingRating(&A, n)
+		fmt.Println("--------------------LIST BARBER--------------------")
+		for i = 0; i < n; i++ {
+			fmt.Printf("%d. Nama: %s, Harga: %d, Rating: %d, Tanggal: ", i+1, A[i].nama, A[i].harga, A[i].rating)
+			j = 0
+			for A[i].tanggalTersedia[j] != 0 && j < NMAX {
+				fmt.Printf("%d ", A[i].tanggalTersedia[j])
+				j++
+			}
+			fmt.Println()
+		}
+		bookingBarberSort(A, n)
+	} else if x == 0 {
+		menuPelanggan()
+	} else {
+		fmt.Println("\nMasukan tidak valid, silahkan pilih kembali")
+		cetakListBarber(A, Ah, n)
+	}
+}
+
+func cariNamaBarber(A ArrBarber, n int, namaBarber string) {
+	var ketemu bool
+	var i, j, cetak int
+	var namaDicari string
+
+	fmt.Println("Masukkan nama yang ingin anda cari")
+	fmt.Scan(&namaDicari)
+	namaBarber = namaDicari
+	for i = 0; i < n; i++ {
+		if A[i].nama == namaBarber {
+			fmt.Printf("Nama: %s, Harga: %d, Rating: %d, Tanggal: ", A[i].nama, A[i].harga, A[i].rating)
+			j = 0
+			for A[i].tanggalTersedia[j] != 0 && j < NMAX {
+				fmt.Printf("%d ", A[i].tanggalTersedia[j])
+				j++
+			}
+			fmt.Println()
+			ketemu = true
+			cetak = i
+			bookBarBerdicari(A, n, namaBarber, cetak)
+		}
+	}
+	if !ketemu {
+		fmt.Println("Barber dengan nama", namaBarber, "tidak ditemukan.")
+		fmt.Println("silahkan cari lagi")
+		cariNamaBarber(A, n, namaBarber)
+	}
+}
+
+func bookBarBerdicari(A ArrBarber, n int, namaBarber string, cetak int) {
+	fmt.Println("1. Booking barber", "\n2. Cari barber lagi", "\n0. kembali")
+	fmt.Print("Pilihan anda: ")
+	fmt.Scan(&x)
+	if x == 1 {
+		cekTanggalBarberDicari(A, n, cetak)
+	} else if x == 2 {
+		cariNamaBarber(A, n, namaBarber)
+	} else if x == 0 {
+		menuPelanggan()
+	} else {
+		fmt.Println("\nMasukan tidak valid, silahkan pilih kembali")
+		bookBarBerdicari(A, n, namaBarber, cetak)
+	}
+}
+
+func cekTanggalBarberDicari(A ArrBarber, n int, cetak int) {
+	var tanggal, i int
+	fmt.Print("Masukkan tanggal yang ingin di-booking: ")
+	fmt.Scan(&tanggal)
+
+	for i = 0; i < NMAX; i++ {
+		if A[cetak].tanggalTersedia[i] == tanggal && tanggal != 0 {
+			fmt.Println("=============================================")
+			fmt.Println("                PESANAN ANDA                 ")
+			fmt.Println("=============================================")
+			fmt.Println("NAMA BARBER : ", A[cetak].nama)
+			fmt.Println("TANGGAL : ", tanggal)
+			fmt.Println("=============================================")
+		}
+	}
+	fmt.Println("\nTanggal tidak tersedia, silahkan pilih tanggal lain.")
+	cekTanggalBarberDicari(A, n, cetak)
+}
+
+func bookingBarberSort(A ArrBarber, n int) {
+	var barberBooking int
+	fmt.Println("Pilih barber yang ingin di-booking (masukkan angka) atau 0 untuk kembali: ")
+	fmt.Scan(&barberBooking)
+	if barberBooking == 0 {
+		menuPelanggan()
+	} else if barberBooking >= 1 && barberBooking <= n {
+		cekTanggalBarberSort(A, barberBooking-1, n)
+	} else {
+		fmt.Println("Pilihan tidak valid, silahkan pilih kembali")
+		bookingBarberSort(A, n)
+	}
+}
+
+func cekTanggalBarberSort(A ArrBarber, index int, n int) {
+	var tanggal, i int
+	fmt.Print("Masukkan tanggal yang ingin di-booking: ")
+	fmt.Scan(&tanggal)
+	for i = 0; i < NMAX; i++ {
+		if A[index].tanggalTersedia[i] == tanggal && tanggal != 0 {
+			fmt.Println("=============================================")
+			fmt.Println("                PESANAN ANDA                 ")
+			fmt.Println("=============================================")
+			fmt.Println("NAMA BARBER : ", A[index].nama)
+			fmt.Println("TANGGAL : ", tanggal)
+			fmt.Println("=============================================")
+
+		}
+	}
+	fmt.Println("\nTanggal tidak tersedia, silahkan pilih tanggal lain.")
+	cekTanggalBarberSort(A, index, n)
+}
+func bookingRange(ARange ArrRange, n int) {
+	var barberBooking int
+	fmt.Println("Pilih barber yang ingin di-booking (masukkan angka) atau 0 untuk kembali: ")
+	fmt.Scan(&barberBooking)
+	if barberBooking == 0 {
+		menuPelanggan()
+	} else if barberBooking >= 1 && barberBooking <= n {
+		cekTanggalBarberange(ARange, barberBooking-1, n)
+	} else {
+		fmt.Println("Pilihan tidak valid, silahkan pilih kembali")
+		bookingRange(ARange, n)
+	}
+}
+
+func cekTanggalBarberange(ARange ArrRange, index int, n int) {
+	var tanggal, i int
+	fmt.Print("Masukkan tanggal yang ingin di-booking: ")
+	fmt.Scan(&tanggal)
+	for i = 0; i < NMAX; i++ {
+		if ARange[index].tanggalTersedia[i] == tanggal && tanggal != 0 {
+			fmt.Println("=============================================")
+			fmt.Println("                PESANAN ANDA                 ")
+			fmt.Println("=============================================")
+			fmt.Println("NAMA BARBER : ", ARange[index].nama)
+			fmt.Println("TANGGAL : ", tanggal)
+			fmt.Println("=============================================")
+		}
+	}
+	fmt.Println("\nTanggal tidak tersedia, silahkan pilih tanggal lain.")
+	cekTanggalBarberange(ARange, index, n)
+}
+
+func sortingRating(A *ArrBarber, n int) {
+	var i, pass int
+	var temp barber
+	for pass = 1; pass < n; pass++ {
+		for i = 0; i < n-pass; i++ {
+			if A[i].rating < A[i+1].rating {
+				temp = A[i]
+				A[i] = A[i+1]
+				A[i+1] = temp
+			}
+		}
+	}
+}
+
+func sortingHarga(A *ArrBarber, Ah *ArrHarga, n int) {
+	var i, pass int
+	var temp barber
+	var temp2 int
+	for pass = 1; pass < n; pass++ {
+		for i = 0; i < n-pass; i++ {
+			if Ah[i] > Ah[i+1] {
+				temp2 = Ah[i]
+				Ah[i] = Ah[i+1]
+				Ah[i+1] = temp2
+				temp = A[i]
+				A[i] = A[i+1]
+				A[i+1] = temp
+			}
+		}
+	}
+}
+
+func jumArrayRange(Ah ArrHarga, batasAwal, batasAtas, n int, index *ArrHarga) int {
+	var low, high, mid, start, end, count, i int
+	count = 0
+
+	low, high = 0, n-1
+	for low <= high {
+		mid = (low + high) / 2
+		if Ah[mid] >= batasAwal {
+			high = mid - 1
+		} else {
+			low = mid + 1
+		}
+	}
+	start = low
+
+	low, high = 0, n-1
+	for low <= high {
+		mid = (low + high) / 2
+		if Ah[mid] <= batasAtas {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+	end = high
+
+	for i = start; i <= end; i++ {
+		if Ah[i] >= batasAwal && Ah[i] <= batasAtas {
+			index[count] = i
+			count++
+		}
+	}
+	return count
+}
